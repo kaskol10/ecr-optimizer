@@ -24,7 +24,7 @@ jobs:
           echo "Version: $VERSION"
 
       - name: Wait for Docker images
-        uses: lewagon/wait-on-check-action@v1.3.1
+        uses: lewagon/wait-on-check-action@v1.4.1
         with:
           ref: ${{ github.ref }}
           check-name: 'Build and Push Docker Images'
@@ -33,7 +33,7 @@ jobs:
           allowed-conclusions: success,failure
 
       - name: Wait for Helm chart
-        uses: lewagon/wait-on-check-action@v1.3.1
+        uses: lewagon/wait-on-check-action@v1.4.1
         with:
           ref: ${{ github.ref }}
           check-name: 'Package and Publish Helm Chart'
@@ -79,7 +79,7 @@ jobs:
           EOF
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           body_path: release-notes.md
           draft: false
