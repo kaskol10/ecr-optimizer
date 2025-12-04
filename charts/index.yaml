@@ -5,9 +5,9 @@ entries:
       category: Infrastructure
     apiVersion: v2
     appVersion: 1.0.0
-    created: "2025-12-04T14:47:09.332868519Z"
+    created: "2025-12-04T15:08:06.014398143Z"
     description: ECR Optimizer - AWS ECR image management tool
-    digest: c4596bb3532f9b4fac3d4814ae46f13ad06c59b9795010a9d8c166a7f3d999c4
+    digest: 8f2be56a2030dbf8f7b71a8108607b8cd5d3f45f6f6368b11bcc0d9396d72da6
     home: https://github.com/kaskol10/ecr-optimizer
     keywords:
     - aws
@@ -26,4 +26,4 @@ entries:
     urls:
     - https://kaskol10.github.io/ecr-optimizer/charts/ecr-optimizer-0.1.0.tgz
     version: 0.1.0
-generated: "2025-12-04T14:47:09.332283332Z"
+generated: "2025-12-04T15:08:06.013694213Z"
