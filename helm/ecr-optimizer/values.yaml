@@ -111,10 +111,16 @@ backend:
 
 # Frontend configuration  
 frontend:
+  # Backend API URL for frontend to connect to
+  # When ingress.enabled=true: Empty string (uses relative paths, ingress handles /api routing)
+  # For sidecar deployment: http://localhost:8081 (default)
+  # For separate deployment: http://<release-name>-ecr-optimizer-backend:8081 (auto-generated)
+  # Can be overridden for custom configurations
+  apiUrl: ""
   nginx:
     image:
       repository: nginx
-      tag: "1.25-alpine"
+      tag: "1.29-alpine"
       pullPolicy: IfNotPresent
 
 # Deployment pattern: "sidecar" or "separate"

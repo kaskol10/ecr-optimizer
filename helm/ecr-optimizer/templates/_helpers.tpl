@@ -61,3 +61,19 @@ Create the name of the service account to use
 {{- end }}
 {{- end }}
 
+{{/*
+Determine the backend API URL for the frontend
+*/}}
+{{- define "ecr-optimizer.backendApiUrl" -}}
+{{- if .Values.frontend.apiUrl }}
+{{- .Values.frontend.apiUrl }}
+{{- else if .Values.ingress.enabled }}
+{{- /* When ingress is enabled, use relative paths - ingress handles routing */}}
+{{- "" }}
+{{- else if eq .Values.deploymentPattern "sidecar" }}
+{{- printf "http://localhost:%d" .Values.backend.port }}
+{{- else }}
+{{- printf "http://%s-backend:%d" (include "ecr-optimizer.fullname" .) .Values.service.backendPort }}
+{{- end }}
+{{- end }}
+

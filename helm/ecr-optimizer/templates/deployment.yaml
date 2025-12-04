@@ -88,8 +88,10 @@ spec:
           containerPort: 80
           protocol: TCP
         env:
+        - name: BACKEND_API_URL
+          value: {{ include "ecr-optimizer.backendApiUrl" . | quote }}
         - name: REACT_APP_API_URL
-          value: "http://localhost:{{ .Values.backend.port }}"
+          value: {{ include "ecr-optimizer.backendApiUrl" . | quote }}
         resources:
           {{- toYaml .Values.resources.frontend | nindent 10 }}
       {{- end }}
@@ -143,8 +145,10 @@ spec:
           containerPort: 80
           protocol: TCP
         env:
+        - name: BACKEND_API_URL
+          value: {{ include "ecr-optimizer.backendApiUrl" . | quote }}
         - name: REACT_APP_API_URL
-          value: "http://{{ include "ecr-optimizer.fullname" . }}-backend:{{ .Values.service.backendPort }}"
+          value: {{ include "ecr-optimizer.backendApiUrl" . | quote }}
         resources:
           {{- toYaml .Values.resources.frontend | nindent 10 }}
       {{- with .Values.nodeSelector }}

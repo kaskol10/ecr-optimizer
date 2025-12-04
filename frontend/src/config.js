@@ -1,5 +1,15 @@
 // API configuration
-export const API_URL = process.env.REACT_APP_API_URL || '';
+// Support both build-time (process.env) and runtime (window.__ENV__) configuration
+const getApiUrl = () => {
+  // Runtime configuration (set by entrypoint script)
+  if (typeof window !== 'undefined' && window.__ENV__ && window.__ENV__.REACT_APP_API_URL) {
+    return window.__ENV__.REACT_APP_API_URL;
+  }
+  // Build-time configuration
+  return process.env.REACT_APP_API_URL || '';
+};
+
+export const API_URL = getApiUrl();
 
 // Helper function to build API endpoints
 export const apiUrl = (endpoint) => {
