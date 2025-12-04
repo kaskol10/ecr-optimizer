@@ -25,18 +25,33 @@ helm install ecr-optimizer ./helm/ecr-optimizer -n ecr-optimizer --create-namesp
 
 ### Using IAM Role for Service Account (IRSA) - Recommended for EKS
 
-1. Create an IAM role with ECR permissions
-2. Annotate the service account:
+IRSA allows pods to assume an IAM role without storing credentials. The Helm chart automatically configures the ServiceAccount.
+
+1. **Create IAM Role** with ECR permissions and trust policy for your EKS cluster's OIDC provider
+2. **Install with IRSA**:
+
+```bash
+helm install ecr-optimizer ./helm/ecr-optimizer \
+  --set aws.useIRSA=true \
+  --set aws.roleArn=arn:aws:iam::ACCOUNT_ID:role/ecr-optimizer-role \
+  --set aws.region=us-east-1
+```
+
+**Or using values.yaml:**
 
 ```yaml
 aws:
   useIRSA: true
   roleArn: arn:aws:iam::ACCOUNT_ID:role/ecr-optimizer-role
-
-serviceAccount:
-  annotations:
-    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/ecr-optimizer-role
+  region: us-east-1
 ```
+
+The chart will automatically:
+- Create a ServiceAccount with the `eks.amazonaws.com/role-arn` annotation
+- Configure the pod with `AWS_ROLE_ARN` and `AWS_WEB_IDENTITY_TOKEN_FILE` environment variables
+- Mount the service account token for AWS SDK to use
+
+See [DEPLOYMENT.md](../../DEPLOYMENT.md) for detailed IRSA setup instructions.
 
 ### Using AWS Credentials Secret
 
@@ -75,6 +90,7 @@ The chart supports two deployment patterns:
 | `deploymentPattern` | Deployment pattern: "sidecar" or "separate" | `"sidecar"` |
 | `aws.region` | AWS region | `"us-east-1"` |
 | `aws.useIRSA` | Use IAM Role for Service Account | `false` |
+| `aws.roleArn` | IAM role ARN for IRSA (required when useIRSA=true) | `""` |
 | `aws.credentialsSecret` | Secret name containing AWS credentials | `""` |
 | `service.type` | Kubernetes service type | `ClusterIP` |
 | `ingress.enabled` | Enable ingress | `false` |
@@ -134,6 +150,7 @@ replicaCount: 3
 aws:
   region: us-east-1
   useIRSA: true
+  roleArn: arn:aws:iam::ACCOUNT_ID:role/ecr-optimizer-role
 
 resources:
   backend:

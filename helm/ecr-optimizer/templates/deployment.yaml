@@ -47,10 +47,7 @@ spec:
           value: "{{ .Values.aws.region }}"
         {{- if .Values.aws.useIRSA }}
         - name: AWS_ROLE_ARN
-          valueFrom:
-            configMapKeyRef:
-              name: aws-config
-              key: roleArn
+          value: "{{ .Values.aws.roleArn }}"
         - name: AWS_WEB_IDENTITY_TOKEN_FILE
           value: "/var/run/secrets/eks.amazonaws.com/serviceaccount/token"
         {{- else if .Values.aws.credentialsSecret }}

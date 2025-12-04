@@ -93,8 +93,11 @@ affinity: {}
 aws:
   region: us-east-1
   # Use IAM role for service account (IRSA) - recommended for EKS
-  # Or provide access key/secret via secrets
+  # When useIRSA is true, you must provide the IAM role ARN
   useIRSA: false
+  # IAM role ARN for IRSA (required when useIRSA is true)
+  # Example: arn:aws:iam::123456789012:role/ecr-optimizer-role
+  roleArn: ""
   # If useIRSA is false, create a secret with AWS credentials
   # kubectl create secret generic aws-credentials --from-literal=AWS_ACCESS_KEY_ID=xxx --from-literal=AWS_SECRET_ACCESS_KEY=xxx
   credentialsSecret: ""

@@ -40,7 +40,11 @@ docker push ${REGISTRY}/ecr-optimizer-frontend:latest
 
 ### Option 1: IAM Role for Service Account (IRSA) - Recommended for EKS
 
-1. Create an IAM role with ECR permissions:
+IRSA allows pods to assume an IAM role without storing credentials in Kubernetes. The Helm chart automatically configures the ServiceAccount with the proper annotation.
+
+#### Step 1: Create IAM Role and Trust Policy
+
+1. Create an IAM role with ECR permissions. The role needs these permissions:
 
 ```json
 {
@@ -51,8 +55,13 @@ docker push ${REGISTRY}/ecr-optimizer-frontend:latest
       "Action": [
         "ecr:DescribeRepositories",
         "ecr:DescribeImages",
+        "ecr:BatchGetImage",
         "ecr:BatchDeleteImage",
-        "ecr:ListImages"
+        "ecr:ListImages",
+        "ecr:GetLifecyclePolicy",
+        "ecr:GetLifecyclePolicyPreview",
+        "ecr:DescribeImageScanFindings",
+        "ecr:GetRepositoryPolicy"
       ],
       "Resource": "*"
     }
@@ -60,26 +69,109 @@ docker push ${REGISTRY}/ecr-optimizer-frontend:latest
 }
 ```
 
-2. Create a service account with the role annotation:
+2. Create a trust policy that allows your EKS cluster's OIDC provider to assume the role:
 
-```bash
-# Create service account
-kubectl create serviceaccount ecr-optimizer-sa -n default
-
-# Annotate with IAM role ARN
-kubectl annotate serviceaccount ecr-optimizer-sa \
-  eks.amazonaws.com/role-arn=arn:aws:iam::ACCOUNT_ID:role/ecr-optimizer-role
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::ACCOUNT_ID:oidc-provider/oidc.eks.REGION.amazonaws.com/id/OIDC_ID"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "oidc.eks.REGION.amazonaws.com/id/OIDC_ID:sub": "system:serviceaccount:NAMESPACE:ecr-optimizer",
+          "oidc.eks.REGION.amazonaws.com/id/OIDC_ID:aud": "sts.amazonaws.com"
+        }
+      }
+    }
+  ]
+}
 ```
 
-3. Install with IRSA:
+**Quick Setup with AWS CLI:**
 
 ```bash
+# Get your cluster's OIDC issuer URL
+export CLUSTER_NAME=your-eks-cluster
+export REGION=us-east-1
+export OIDC_ID=$(aws eks describe-cluster --name $CLUSTER_NAME --region $REGION --query "cluster.identity.oidc.issuer" --output text | cut -d '/' -f 5)
+
+# Create IAM role with trust policy
+aws iam create-role \
+  --role-name ecr-optimizer-role \
+  --assume-role-policy-document "{
+    \"Version\": \"2012-10-17\",
+    \"Statement\": [{
+      \"Effect\": \"Allow\",
+      \"Principal\": {
+        \"Federated\": \"arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):oidc-provider/oidc.eks.$REGION.amazonaws.com/id/$OIDC_ID\"
+      },
+      \"Action\": \"sts:AssumeRoleWithWebIdentity\",
+      \"Condition\": {
+        \"StringEquals\": {
+          \"oidc.eks.$REGION.amazonaws.com/id/$OIDC_ID:sub\": \"system:serviceaccount:default:ecr-optimizer\",
+          \"oidc.eks.$REGION.amazonaws.com/id/$OIDC_ID:aud\": \"sts.amazonaws.com\"
+        }
+      }
+    }]
+  }"
+
+# Attach ECR permissions policy
+aws iam attach-role-policy \
+  --role-name ecr-optimizer-role \
+  --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+
+# Or create a custom policy with delete permissions
+aws iam put-role-policy \
+  --role-name ecr-optimizer-role \
+  --policy-name ECROptimizerPolicy \
+  --policy-document file://ecr-policy.json
+```
+
+#### Step 2: Install with IRSA
+
+The Helm chart will automatically create the ServiceAccount with the IRSA annotation:
+
+```bash
+# Get the IAM role ARN
+export ROLE_ARN=$(aws iam get-role --role-name ecr-optimizer-role --query 'Role.Arn' --output text)
+
+# Install with IRSA
 helm install ecr-optimizer ./helm/ecr-optimizer \
   --set aws.useIRSA=true \
+  --set aws.roleArn=${ROLE_ARN} \
   --set aws.region=us-east-1 \
   --set image.backend.repository=${REGISTRY}/ecr-optimizer-backend \
-  --set image.frontend.repository=${REGISTRY}/ecr-optimizer-frontend \
-  --set serviceAccount.name=ecr-optimizer-sa
+  --set image.frontend.repository=${REGISTRY}/ecr-optimizer-frontend
+```
+
+**Or using the Helm repository:**
+
+```bash
+helm repo add ecr-optimizer https://kaskol10.github.io/ecr-optimizer/charts
+helm repo update
+
+helm install ecr-optimizer ecr-optimizer/ecr-optimizer \
+  --set aws.useIRSA=true \
+  --set aws.roleArn=arn:aws:iam::ACCOUNT_ID:role/ecr-optimizer-role \
+  --set aws.region=us-east-1
+```
+
+#### Step 3: Verify IRSA is Working
+
+```bash
+# Check ServiceAccount annotation
+kubectl get serviceaccount ecr-optimizer -o yaml | grep eks.amazonaws.com/role-arn
+
+# Check pod has the token mounted
+kubectl exec -it deployment/ecr-optimizer-backend -- ls -la /var/run/secrets/eks.amazonaws.com/serviceaccount/
+
+# Test AWS credentials in pod
+kubectl exec -it deployment/ecr-optimizer-backend -- env | grep AWS
 ```
 
 ### Option 2: AWS Credentials Secret
