@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Image, HardDrive, TrendingUp, Package } from 'lucide-react';
 import './Dashboard.css';
 import ImageList from './ImageList';
@@ -10,13 +10,7 @@ function Dashboard({ repository }) {
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  useEffect(() => {
-    if (repository) {
-      fetchStats();
-    }
-  }, [repository, refreshKey]);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
       const [imagesRes, mostDownloadedRes, largestRes] = await Promise.all([
@@ -43,7 +37,13 @@ function Dashboard({ repository }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [repository]);
+
+  useEffect(() => {
+    if (repository) {
+      fetchStats();
+    }
+  }, [repository, refreshKey, fetchStats]);
 
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 Bytes';

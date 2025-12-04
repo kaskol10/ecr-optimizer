@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import { ToastProvider, ToastViewport, ToastComponent } from './components/Toast';
 import { useToast } from './hooks/useToast';
@@ -18,11 +18,7 @@ function App() {
   const [error, setError] = useState(null);
   const { toasts, removeToast, error: showError } = useToast();
 
-  useEffect(() => {
-    fetchRepositories();
-  }, []);
-
-  const fetchRepositories = async () => {
+  const fetchRepositories = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -36,7 +32,11 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError]);
+
+  useEffect(() => {
+    fetchRepositories();
+  }, [fetchRepositories]);
 
   return (
     <ToastProvider swipeDirection="right">

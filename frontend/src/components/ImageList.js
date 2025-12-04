@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './ImageList.css';
 import DeleteModal from './DeleteModal';
 import { apiUrl } from '../config';
@@ -10,13 +10,7 @@ function ImageList({ repository, type, title, limit = 10, compact = false }) {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  useEffect(() => {
-    if (repository) {
-      fetchImages();
-    }
-  }, [repository, type, limit]);
-
-  const fetchImages = async () => {
+  const fetchImages = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -33,7 +27,13 @@ function ImageList({ repository, type, title, limit = 10, compact = false }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [repository, type, limit]);
+
+  useEffect(() => {
+    if (repository) {
+      fetchImages();
+    }
+  }, [repository, type, limit, fetchImages]);
 
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 Bytes';
