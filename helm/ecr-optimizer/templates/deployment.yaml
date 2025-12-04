@@ -1,0 +1,166 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ecr-optimizer.fullname" . }}-backend
+  labels:
+    {{- include "ecr-optimizer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "ecr-optimizer.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "ecr-optimizer.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "ecr-optimizer.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: backend
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.backend.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.backend.port }}
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "{{ .Values.backend.port }}"
+        - name: AWS_REGION
+          value: "{{ .Values.aws.region }}"
+        {{- if .Values.aws.useIRSA }}
+        - name: AWS_ROLE_ARN
+          valueFrom:
+            configMapKeyRef:
+              name: aws-config
+              key: roleArn
+        - name: AWS_WEB_IDENTITY_TOKEN_FILE
+          value: "/var/run/secrets/eks.amazonaws.com/serviceaccount/token"
+        {{- else if .Values.aws.credentialsSecret }}
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.aws.credentialsSecret }}
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.aws.credentialsSecret }}
+              key: AWS_SECRET_ACCESS_KEY
+        {{- end }}
+        {{- with .Values.backend.env }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.resources.backend | nindent 10 }}
+      {{- if eq .Values.deploymentPattern "sidecar" }}
+      - name: frontend
+        image: "{{ .Values.image.frontend.repository }}:{{ .Values.image.frontend.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.frontend.pullPolicy }}
+        ports:
+        - name: http-frontend
+          containerPort: 80
+          protocol: TCP
+        env:
+        - name: REACT_APP_API_URL
+          value: "http://localhost:{{ .Values.backend.port }}"
+        resources:
+          {{- toYaml .Values.resources.frontend | nindent 10 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- if eq .Values.deploymentPattern "separate" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ecr-optimizer.fullname" . }}-frontend
+  labels:
+    {{- include "ecr-optimizer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ecr-optimizer.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "ecr-optimizer.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: frontend
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: frontend
+        image: "{{ .Values.image.frontend.repository }}:{{ .Values.image.frontend.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.frontend.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        env:
+        - name: REACT_APP_API_URL
+          value: "http://{{ include "ecr-optimizer.fullname" . }}-backend:{{ .Values.service.backendPort }}"
+        resources:
+          {{- toYaml .Values.resources.frontend | nindent 10 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+

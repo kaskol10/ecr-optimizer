@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Wait for Docker images
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: 'Build and Push Docker Images'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success,failure
+
+      - name: Wait for Helm chart
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: 'Package and Publish Helm Chart'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success,failure
+
+      - name: Create Release Notes
+        id: release-notes
+        run: |
+          cat > release-notes.md << EOF
+          # ECR Optimizer v${{ steps.version.outputs.version }}
+
+          ## Docker Images
+
+          Images are available on GitHub Container Registry:
+
+          - Backend: \`ghcr.io/${{ github.repository }}/backend:v${{ steps.version.outputs.version }}\`
+          - Frontend: \`ghcr.io/${{ github.repository }}/frontend:v${{ steps.version.outputs.version }}\`
+
+          ## Helm Chart
+
+          Install using Helm:
+
+          \`\`\`bash
+          helm repo add ecr-optimizer https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}
+          helm install ecr-optimizer ecr-optimizer/ecr-optimizer \\
+            --set aws.region=us-east-1 \\
+            --set aws.credentialsSecret=aws-credentials
+          \`\`\`
+
+          Or add the repository and install:
+
+          \`\`\`bash
+          helm repo add ecr-optimizer https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}
+          helm repo update
+          helm install ecr-optimizer ecr-optimizer/ecr-optimizer
+          \`\`\`
+
+          ## What's Changed
+
+          See the [changelog](https://github.com/${{ github.repository }}/compare/v${{ github.event.before }}...v${{ steps.version.outputs.version }}) for details.
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: release-notes.md
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+

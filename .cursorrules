@@ -1,0 +1,303 @@
+# ECR Optimizer - Cursor Rules
+
+## Project Overview
+ECR Optimizer is an open-source tool for managing AWS ECR container images. The project uses Go for the backend, React with Radix UI for the frontend, and follows technical English documentation standards.
+
+## Backend (Go)
+
+### Language & Framework
+- **Language**: Go 1.21+
+- **Style**: Follow standard Go formatting (`go fmt`)
+- **Linting**: Use `go vet` and address all warnings
+- **Error Handling**: Always handle errors explicitly, never ignore them
+- **Naming**: Use clear, descriptive names following Go conventions (camelCase for unexported, PascalCase for exported)
+
+### Code Standards
+- Use `context.Context` for cancellation and timeouts in API handlers
+- Return errors explicitly, don't use panic for normal error conditions
+- Use structured logging with `log.Printf` for important events
+- Keep functions focused and small (single responsibility)
+- Use interfaces for testability and abstraction
+- Prefer composition over inheritance
+
+### AWS SDK Patterns
+- Use AWS SDK v1 patterns (current implementation)
+- Always check errors from AWS API calls
+- Use pagination for list operations (NextToken pattern)
+- Cache expensive operations (like global stats) appropriately
+- Use environment variables for AWS configuration (region, credentials)
+
+### API Design
+- RESTful endpoints under `/api` prefix
+- Use appropriate HTTP methods (GET, POST)
+- Return JSON responses with consistent error format
+- Include proper CORS headers for frontend access
+- Use query parameters for filtering/limiting
+
+### Example Backend Pattern
+```go
+func handlerName(w http.ResponseWriter, r *http.Request) {
+    // Validate input
+    // Perform operation
+    // Handle errors explicitly
+    // Return JSON response
+    respondJSON(w, http.StatusOK, data)
+}
+```
+
+## Frontend (React + Radix UI)
+
+### Framework & Libraries
+- **Framework**: React 18+
+- **UI Components**: Radix UI primitives (preferred over custom components)
+- **Icons**: Lucide React
+- **Styling**: CSS modules (component-specific CSS files)
+- **State Management**: React hooks (useState, useEffect, useContext)
+- **HTTP**: Native fetch API (via apiUrl helper from config.js)
+
+### Component Structure
+- Use functional components with hooks
+- Keep components focused and reusable
+- Extract complex logic into custom hooks
+- Use CSS modules for component styling (ComponentName.css)
+- Place components in `src/components/` directory
+
+### Radix UI Guidelines
+- **Always prefer Radix UI components** over custom implementations when available
+- Use Radix UI primitives for: Dialog, Toast, Tabs, Select, Switch, etc.
+- Import from `@radix-ui/react-*` packages
+- Follow Radix UI patterns and accessibility guidelines
+- Customize styling via CSS, not by overriding Radix internals
+
+### Available Radix UI Components
+- `@radix-ui/react-dialog` - Modals and dialogs
+- `@radix-ui/react-toast` - Toast notifications
+- `@radix-ui/react-tabs` - Tab navigation
+- `@radix-ui/react-select` - Select dropdowns
+- `@radix-ui/react-switch` - Toggle switches
+- `@radix-ui/react-label` - Form labels
+- `@radix-ui/react-progress` - Progress indicators
+- `@radix-ui/react-radio-group` - Radio button groups
+- `@radix-ui/react-separator` - Visual separators
+
+### State Management
+- Use `useState` for local component state
+- Use `useEffect` for side effects (API calls, subscriptions)
+- Use custom hooks (like `useToast`) for shared logic
+- Avoid prop drilling - use context for deeply nested state if needed
+
+### API Integration
+- Always use `apiUrl()` helper from `config.js` for API endpoints
+- Handle loading and error states in components
+- Use try/catch for error handling in async functions
+- Show user-friendly error messages via Toast notifications
+
+### Styling Guidelines
+- Use CSS modules (ComponentName.css) for component styles
+- Follow existing naming conventions (kebab-case for classes)
+- Use CSS variables for colors and spacing when possible
+- Ensure responsive design (mobile-first approach)
+- Maintain consistent spacing and typography
+
+### Example Frontend Pattern
+```jsx
+import React, { useState, useEffect } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { apiUrl } from '../config';
+import './ComponentName.css';
+
+function ComponentName({ prop1, prop2 }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    fetchData();
+  }, []);
+  
+  const fetchData = async () => {
+    try {
+      const response = await fetch(apiUrl('/api/endpoint'));
+      const result = await response.json();
+      setData(result);
+    } catch (error) {
+      // Handle error
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  if (loading) return <div>Loading...</div>;
+  
+  return (
+    <div className="component-name">
+      {/* Use Radix UI components */}
+      <Dialog.Root>
+        {/* Component content */}
+      </Dialog.Root>
+    </div>
+  );
+}
+```
+
+## Documentation
+
+### Language & Style
+- **Language**: Technical English
+- **Tone**: Professional, clear, and concise
+- **Audience**: Developers and DevOps engineers
+- **Format**: Markdown (.md files)
+
+### Documentation Standards
+- **Keep documentation updated** when code changes
+- Use clear headings and structure
+- Include code examples where helpful
+- Use proper markdown formatting (code blocks, lists, tables)
+- Include prerequisites and setup instructions
+- Document API endpoints with examples
+- Update CHANGELOG.md for all releases
+
+### Required Documentation Files
+- `README.md` - Main project documentation
+- `CHANGELOG.md` - Version history and changes
+- `CONTRIBUTING.md` - Contribution guidelines
+- `QUICKSTART.md` - Quick start guide
+- `RELEASE.md` - Release process documentation
+- Component-specific docs in code comments
+
+### Documentation Update Checklist
+When making code changes:
+- [ ] Update README.md if features/usage change
+- [ ] Update CHANGELOG.md for user-facing changes
+- [ ] Update API documentation if endpoints change
+- [ ] Update inline code comments for complex logic
+- [ ] Update QUICKSTART.md if setup process changes
+
+### Technical Writing Guidelines
+- Use active voice when possible
+- Be specific and avoid ambiguity
+- Use consistent terminology (e.g., "repository" not "repo" in docs)
+- Include context and "why" not just "what"
+- Use code examples to illustrate concepts
+- Keep sentences concise and focused
+
+### Example Documentation Pattern
+```markdown
+## Feature Name
+
+Brief description of what the feature does and why it's useful.
+
+### Usage
+
+```bash
+# Example command or code
+```
+
+### Configuration
+
+- **Option 1**: Description
+- **Option 2**: Description
+
+### Notes
+
+Any important considerations or limitations.
+```
+
+## Code Review Guidelines
+
+### Backend Reviews
+- Check error handling is explicit
+- Verify AWS API calls handle pagination
+- Ensure proper context usage for timeouts
+- Check for potential race conditions in concurrent code
+- Verify logging is appropriate (not too verbose, not too sparse)
+
+### Frontend Reviews
+- Verify Radix UI components are used (not custom alternatives)
+- Check for proper error handling and loading states
+- Ensure responsive design works on mobile
+- Verify accessibility (keyboard navigation, ARIA labels)
+- Check CSS follows existing patterns
+
+### Documentation Reviews
+- Verify technical English is clear and correct
+- Check that examples are accurate and tested
+- Ensure documentation matches current code
+- Verify all links work
+- Check formatting is consistent
+
+## Testing
+
+### Backend Testing
+- Write unit tests for complex logic
+- Test error handling paths
+- Mock AWS SDK calls in tests
+- Test API endpoints with various inputs
+
+### Frontend Testing
+- Test component rendering
+- Test user interactions
+- Test error states
+- Test loading states
+- Verify API integration works
+
+## Git & Version Control
+
+### Commit Messages
+- Use clear, descriptive commit messages
+- Follow conventional commits when possible (feat:, fix:, docs:, etc.)
+- Reference issue numbers when applicable
+
+### Branch Strategy
+- `main` - Production-ready code
+- Feature branches: `feature/description`
+- Bug fixes: `fix/description`
+
+## When Adding New Features
+
+1. **Backend**: 
+   - Add Go handler function
+   - Add route in main.go
+   - Handle errors explicitly
+   - Add appropriate logging
+
+2. **Frontend**:
+   - Create React component using Radix UI
+   - Add CSS module for styling
+   - Integrate with API using apiUrl helper
+   - Handle loading/error states
+
+3. **Documentation**:
+   - Update README.md with new feature
+   - Add entry to CHANGELOG.md
+   - Update API documentation if needed
+   - Keep technical English clear and accurate
+
+## Prohibited Patterns
+
+### Backend
+- ❌ Ignoring errors (use `_ = err`)
+- ❌ Using panic for normal error conditions
+- ❌ Hardcoding AWS credentials
+- ❌ Missing error handling in API calls
+
+### Frontend
+- ❌ Creating custom components when Radix UI equivalent exists
+- ❌ Using inline styles (use CSS modules)
+- ❌ Ignoring loading/error states
+- ❌ Hardcoding API URLs (use apiUrl helper)
+
+### Documentation
+- ❌ Outdated documentation
+- ❌ Casual/informal language
+- ❌ Missing examples for complex features
+- ❌ Broken or outdated links
+
+## Questions?
+
+When in doubt:
+1. Check existing code for patterns
+2. Review similar components/features
+3. Follow Go/React best practices
+4. Maintain consistency with existing codebase
+5. Update documentation to reflect changes
+

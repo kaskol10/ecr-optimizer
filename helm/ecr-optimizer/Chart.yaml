@@ -1,0 +1,22 @@
+apiVersion: v2
+name: ecr-optimizer
+description: ECR Optimizer - AWS ECR image management tool
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+home: https://github.com/kaskol10/ecr-optimizer
+sources:
+  - https://github.com/kaskol10/ecr-optimizer
+keywords:
+  - aws
+  - ecr
+  - container
+  - optimization
+  - cost-reduction
+  - docker
+  - image-management
+maintainers:
+  - name: ECR Optimizer Contributors
+annotations:
+  category: Infrastructure
+

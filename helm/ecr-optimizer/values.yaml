@@ -1,0 +1,119 @@
+# Default values for ecr-optimizer
+replicaCount: 1
+
+image:
+  backend:
+    # Default to GitHub Container Registry (replace kaskol10 with your GitHub username/org)
+    # Example: ghcr.io/myorg/ecr-optimizer/backend
+    # Override with: --set image.backend.repository=your-registry/ecr-optimizer-backend
+    repository: ghcr.io/kaskol10/ecr-optimizer/backend
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  frontend:
+    # Default to GitHub Container Registry (replace kaskol10 with your GitHub username/org)
+    # Example: ghcr.io/myorg/ecr-optimizer/frontend
+    # Override with: --set image.frontend.repository=your-registry/ecr-optimizer-frontend
+    repository: ghcr.io/kaskol10/ecr-optimizer/frontend
+    pullPolicy: IfNotPresent
+    tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  backendPort: 8081
+  frontendPort: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: ecr-optimizer.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: ecr-optimizer-tls
+  #    hosts:
+  #      - ecr-optimizer.local
+
+resources:
+  backend:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  frontend:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# AWS Configuration
+aws:
+  region: us-east-1
+  # Use IAM role for service account (IRSA) - recommended for EKS
+  # Or provide access key/secret via secrets
+  useIRSA: false
+  # If useIRSA is false, create a secret with AWS credentials
+  # kubectl create secret generic aws-credentials --from-literal=AWS_ACCESS_KEY_ID=xxx --from-literal=AWS_SECRET_ACCESS_KEY=xxx
+  credentialsSecret: ""
+
+# Backend configuration
+backend:
+  port: 8081
+  env: []
+    # - name: CUSTOM_VAR
+    #   value: "value"
+
+# Frontend configuration  
+frontend:
+  nginx:
+    image:
+      repository: nginx
+      tag: "1.25-alpine"
+      pullPolicy: IfNotPresent
+
+# Deployment pattern: "sidecar" or "separate"
+deploymentPattern: "sidecar"
+
