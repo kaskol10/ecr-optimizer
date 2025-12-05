@@ -23,11 +23,20 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
-      - name: Wait for Docker images
+      - name: Wait for Backend Docker image
         uses: lewagon/wait-on-check-action@v1.4.1
         with:
           ref: ${{ github.ref }}
-          check-name: 'Build and Push Docker Images'
+          check-name: 'Build Backend Image'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success,failure
+
+      - name: Wait for Frontend Docker image
+        uses: lewagon/wait-on-check-action@v1.4.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: 'Build Frontend Image'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
           allowed-conclusions: success,failure
