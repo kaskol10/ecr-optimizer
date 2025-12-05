@@ -21,6 +21,33 @@ A powerful open-source tool to gain visibility into AWS ECR repositories and red
 - **Safety First**: Preview all images before deletion with detailed confirmation modal
 - **SBOM Awareness**: Clear warnings about SBOM deletion before confirming
 
+## 📸 Screenshots
+
+### Global View
+Overview of all repositories with total images, size, and top 20/30 largest/all repositories.
+
+![Global View](docs/images/GlobalView.png)
+
+### Repository View
+Detailed view of a specific repository showing most recently pulled images and largest images.
+
+![Repository View](docs/images/RepositoryView.png)
+
+### Delete Images by Date
+Delete images based on last pull date with date selection.
+
+![Delete Images by Date](docs/images/DeleteImageByDate.png)
+
+### Preview Deletion
+Preview all images that will be deleted before confirming the operation.
+
+![Preview Deletion](docs/images/PreviewDeleteImageByDate.png)
+
+### Confirm Deletion
+Final confirmation modal with detailed information about images to be deleted, including SBOM warnings.
+
+![Confirm Deletion](docs/images/ConfirmDeletion.png)
+
 ## 🚀 Why ECR Optimizer?
 
 AWS ECR lifecycle policies require you to:
